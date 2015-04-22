@@ -31,21 +31,21 @@ import java.util.Arrays;
 public class SampleIAMApp {
 
   // The GCP Project Id.
-  private static String PROJECT_ID = "<add project Id>";
+  private static final String PROJECT_ID = "<add project Id>";
 
   // The email address of the user you want to add to the project.
-  private static String EMAIL_ADDRESS_TO_ADD = "<add email>";
+  private static final String EMAIL_ADDRESS_TO_ADD = "<add email>";
 
   // The role in which the user should be added. Possible choices are:
   // "owners", "editors", "viewers".
-  private static String ROLE = "editors";
+  private static final String ROLE = "editors";
 
   // Client ID for native application - Create/Get these settings from the
   // Credentials section under APIs & auth in the left nav of the Cloud Console.
-  private static String CLIENT_ID =
+  private static final String CLIENT_ID =
       "<add client id>";
-  private static String CLIENT_SECRET = "<add client secret>";
-  private static String REDIRECT_URI = "<add redirect uri>";
+  private static final String CLIENT_SECRET = "<add client secret>";
+  private static final String REDIRECT_URI = "<add redirect uri>";
 
   // File which to save the refresh token so you only need to authenticate once.
   private static final java.io.File REFRESH_TOKEN_FILE =
