@@ -11,8 +11,16 @@ import com.google.api.services.projectpermissions.model.GetIamPolicyRequest;
 import com.google.api.services.projectpermissions.model.Policy;
 import com.google.api.services.projectpermissions.model.SetIamPolicyRequest;
 
+import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
+import java.nio.charset.Charset;
 import java.util.Arrays;
 
 /**
@@ -39,19 +47,32 @@ public class SampleIAMApp {
   private static String CLIENT_SECRET = "<add client secret>";
   private static String REDIRECT_URI = "<add redirect uri>";
 
-  // Leave this empty the first time you run. Then copy in the refresh token
-  // that is provided in the output to authenticate automatically from then on.
-  private static String REFRESH_TOKEN =
-      "";
-
+  // File which to save the refresh token so you only need to authenticate once.
+  private static final java.io.File REFRESH_TOKEN_FILE =
+      new File(System.getProperty("user.home"), ".credentials/refreshtoken.txt");
 
   public static void main(String[] args) throws Exception {
     Projectpermissions client = null;
 
+    String refreshToken = "";
+    try (
+        BufferedReader br = new BufferedReader(
+            new InputStreamReader(
+                new FileInputStream(REFRESH_TOKEN_FILE), Charset.forName("UTF-8")));
+        ) {
+      refreshToken = br.readLine();
+    } catch (FileNotFoundException e) {
+      // If file is not found continue, we will create it after we authenticate.
+    }
+    catch (Exception e) {
+      System.out.println("Error reading refresh token from file: " + REFRESH_TOKEN_FILE);
+      e.printStackTrace();
+    }
+
     // Authenticate
     try {
-      client = (REFRESH_TOKEN.isEmpty() ? AuthorizeClientViaWebBrowser() :
-          AuthorizeClientViaRefreshToken(REFRESH_TOKEN));
+      client = (refreshToken.isEmpty() ? AuthorizeClientViaWebBrowser() :
+          AuthorizeClientViaRefreshToken(refreshToken));
     } catch (Exception e) {
       System.out.println("Error Authorizing the client.");
       e.printStackTrace();
@@ -116,8 +137,8 @@ public class SampleIAMApp {
 
     GoogleTokenResponse response =
         flow.newTokenRequest(code).setRedirectUri(REDIRECT_URI).execute();
-    System.out.println("Set this to REFRESH_TOKEN to avoid the web browser: " +
-        response.getRefreshToken());
+    // Save the refresh token for later use
+    WriteRefreshTokenToFile(response.getRefreshToken());
 
     return AuthorizeClientViaRefreshToken(response.getRefreshToken());
   }
@@ -137,9 +158,28 @@ public class SampleIAMApp {
     // Create a new authorized API client
     Projectpermissions client = new Projectpermissions
         .Builder(httpTransport, jsonFactory, credential)
-        .setApplicationName("Driver App")
+        .setApplicationName("SampleIAMApp")
         .build();
 
     return client;
+  }
+
+  private static void WriteRefreshTokenToFile(String refreshToken) {
+    PrintWriter output = null;
+    try {
+      output = new PrintWriter(
+          new OutputStreamWriter(
+              new BufferedOutputStream(
+                  new FileOutputStream(REFRESH_TOKEN_FILE)), Charset.forName("UTF-8")));
+        output.println(refreshToken);
+    } catch (Exception e) {
+      System.out.println("Error writing refresh token to file: " + REFRESH_TOKEN_FILE);
+      e.printStackTrace();
+    } finally {
+      if (output != null) {
+        output.flush();
+        output.close();
+      }
+    }
   }
 }
